@@ -23,12 +23,20 @@ app.post("/", (req, res) => {
 });
 
 // make any new endpoints here (e.g /api/companies):
-
 app.get("/api/companies", async (req, res) => {
   // return all documents from the companies mongodb collection:
   const companies = await db.collection("Companies").find({}).toArray();
   console.log(companies);
   res.send(companies);
+});
+
+app.post("/api/user_transactions", async (req, res) => {
+  // Return all transactions to and from a specific user by the UserAccountNumber
+  const transactions = await db
+    .collection("Transactions")
+    .find({ to: req.header.UserAccountNumber })
+    .toArray();
+    res.send(transactions);
 });
 
 // listening to the server on port 3000
