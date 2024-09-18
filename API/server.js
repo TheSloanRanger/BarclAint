@@ -32,6 +32,29 @@ app.get("/api/companies", async (req, res) => {
   res.send(companies);
 });
 
+// gets the company RAG score
+app.get("/api/companies/companyScore/:company", async (req, res) => {
+  let companyName = req.params.company;
+  const company = await db.collection("Companies").findOne({"Company Name": companyName});
+  let carbonEmissions = Number(company["Carbon Emissions"]);
+  let wasteManagement = Number(company["Waste Management"]);
+  let sustainabilityPractices = Number(company["Sustainability Practices"]);
+  let ragScore = `"ragScore": ${(carbonEmissions+wasteManagement+sustainabilityPractices)/(30)}`;
+  res.send(ragScore);
+});
+
+app.get("api/companies/similarCompanies/:company", async (req, res) => {
+  let accountNumber = req.params.company;
+  console.log(accountNumber);
+  const company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+  const companies = await db.collection("Companies").find({"Spending Category": company["Spending Category"]}).toArray();
+  var table = [];
+  for(var i=0; i < companies.length; i++){
+    console.log(companies[i]["Company Name"]);
+  }
+  res.send(companies);
+});
+
 app.post("/api/user_transactions", async (req, res) => {
   // Return all transactions to and from a specific user by the UserAccountNumber
   const transactions = await db
@@ -42,23 +65,6 @@ app.post("/api/user_transactions", async (req, res) => {
 });
 
 
-// gets the company RAG score
-app.get("/api/companies/companyScore/:company", async (req, res) => {
-  let companyName = req.params.company;
-  // const company = await db.collection("Companies").find({"Company Name": companyName}).toArray();
-  const company = await db.collection("Companies").findOne({"Company Name": companyName});
-  console.log(company)
-  var carbonEmissions = Number(company["Carbon Emissions"]);
-  var wasteManagement = Number(company["Waste Management"]);
-  var sustainabilityPractices = Number(company["Sustainability Practices"]);
-  console.log(carbonEmissions);
-  console.log(wasteManagement);
-  console.log(sustainabilityPractices);
-  let ragScore = (carbonEmissions+wasteManagement+sustainabilityPractices)/(30);
-  console.log(ragScore);
-  console.log(company.Summary);
-  res.send(company);
-});
 
 // listening to the server on port 3000
 app.listen(3000, () => {
