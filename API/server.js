@@ -36,23 +36,27 @@ app.post("/api/user_transactions", async (req, res) => {
   // Return all transactions to and from a specific user by the UserAccountNumber
   const transactions = await db
     .collection("Transactions")
-    .find({ to: req.header.UserAccountNumber })
+    .find({to: req.header.UserAccountNumber })
     .toArray();
     res.send(transactions);
-
 });
+
+
 // gets the company RAG score
 app.get("/api/companies/companyScore/:company", async (req, res) => {
   let companyName = req.params.company;
-  const company = await db.collection("Companies").find({"Company Name": companyName}).toArray();
-  var carbonEmissions = Number(company[0]["Carbon Emissions"]);
-  var wasteManagement = Number(company[0]["Waste Management"]);
-  var sustainabilityPractices = Number(company[0]["Sustainability Practices"]);
+  // const company = await db.collection("Companies").find({"Company Name": companyName}).toArray();
+  const company = await db.collection("Companies").findOne({"Company Name": companyName});
+  console.log(company)
+  var carbonEmissions = Number(company["Carbon Emissions"]);
+  var wasteManagement = Number(company["Waste Management"]);
+  var sustainabilityPractices = Number(company["Sustainability Practices"]);
   console.log(carbonEmissions);
   console.log(wasteManagement);
   console.log(sustainabilityPractices);
   let ragScore = (carbonEmissions+wasteManagement+sustainabilityPractices)/(30);
   console.log(ragScore);
+  console.log(company.Summary);
   res.send(company);
 });
 
