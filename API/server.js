@@ -23,12 +23,28 @@ app.post("/", (req, res) => {
 });
 
 // make any new endpoints here (e.g /api/companies):
-
 app.get("/api/companies", async (req, res) => {
   // return all documents from the companies mongodb collection:
   const companies = await db.collection("Companies").find({}).toArray();
   console.log(companies);
+  console.log(companies.length);
+  console.log()
   res.send(companies);
+});
+
+// gets the company RAG score
+app.get("/api/companies/companyScore/:company", async (req, res) => {
+  let companyName = req.params.company;
+  const company = await db.collection("Companies").find({"Company Name": companyName}).toArray();
+  var carbonEmissions = Number(company[0]["Carbon Emissions"]);
+  var wasteManagement = Number(company[0]["Waste Management"]);
+  var sustainabilityPractices = Number(company[0]["Sustainability Practices"]);
+  console.log(carbonEmissions);
+  console.log(wasteManagement);
+  console.log(sustainabilityPractices);
+  let ragScore = (carbonEmissions+wasteManagement+sustainabilityPractices)/(30);
+  console.log(ragScore);
+  res.send(company);
 });
 
 // listening to the server on port 3000
