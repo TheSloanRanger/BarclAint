@@ -6,6 +6,7 @@ const uri =
   "mongodb+srv://BarclaintGroup:XHfVyF4mkQCPUMTf@freecluster.lfcpx.mongodb.net/Barclaint";
 
 const app = express();
+app.use(express.json());
 
 // connecting to mongoDB database using mongoose
 mongoose
@@ -34,13 +35,20 @@ app.get("/api/companies", async (req, res) => {
 
 app.post("/api/user_transactions", async (req, res) => {
   // Return all transactions to and from a specific user by the UserAccountNumber
+  console.log(req.body.UserAccountNumber);
   const transactions = await db
     .collection("Transactions")
-    .find({ to: req.header.UserAccountNumber })
+    .find({ "from": req.body.UserAccountNumber })
     .toArray();
-    res.send(transactions);
-
+  res.send(transactions);
+  console.log("Hello")
+  
 });
+
+
+
+
+
 // gets the company RAG score
 app.get("/api/companies/companyScore/:company", async (req, res) => {
   let companyName = req.params.company;
