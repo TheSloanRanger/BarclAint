@@ -59,6 +59,21 @@ app.post("/api/user_transactions/to", async (req, res) => {
 
 });
 
+//Body of request MUST be in the form of:
+/*
+{ 
+  "name" : "XXXXX",
+  "age" : "XX",
+  "accountnumber" : "0000000000",
+  "accountbalance" : 500 (any integer)
+}
+*/
+app.put("/api/user/add", async (req, res) => {
+  // Add a new user to the Users collection
+  const user = await db.collection("Users").insertOne(req.body);
+  res.send(user);
+});
+
 
 
 
