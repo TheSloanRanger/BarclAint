@@ -42,7 +42,21 @@ app.post("/api/user_transactions", async (req, res) => {
     .toArray();
   res.send(transactions);
   console.log("Hello")
-  
+
+});
+
+
+app.post("/api/user_transactions/to", async (req, res) => {
+  // Return all transactions from a specific company by the Company Account Number
+  const transactions = await db
+    .collection("Transactions")
+    .find({ 
+      "to": req.body.CompanyAccountNumber,
+      "from": req.body.UserAccountNumber
+    })
+    .toArray();
+    res.send(transactions);
+
 });
 
 
