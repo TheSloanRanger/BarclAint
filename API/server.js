@@ -43,6 +43,7 @@ function getRAGScore(company){
 app.get("/api/companies/companyScore/:accountNumber", async (req, res) => {
   let accountNumber = req.params.accountNumber;
   const company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+  console.log(company);
   res.send(getRAGScore(company));
 });
 
