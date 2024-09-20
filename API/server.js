@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const db = mongoose.connection;
@@ -23,7 +24,8 @@ function generateRandomAccountNumber(){
 }
 
 // this is a basic root path
-app.post("/", (req, res) => {
+app.get("/", (req, res) => {
+  console.log("Hello World");
   res.send("Hello World");
 });
 
@@ -158,6 +160,7 @@ app.get("/api/companies/companyScore/:company", async (req, res) => {
 
 
 // listening to the server on port 3000
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
