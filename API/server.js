@@ -76,8 +76,6 @@ app.put("/api/user/add", async (req, res) => {
 
 
 
-
-
 // gets the company RAG score
 app.get("/api/companies/companyScore/:company", async (req, res) => {
   let companyName = req.params.company;
