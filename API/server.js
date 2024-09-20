@@ -61,6 +61,20 @@ app.post("/api/user_transactions/to", async (req, res) => {
 
 //Body of request MUST be in the form of:
 /*
+{
+  UserAccountNumber : "0000000000",
+  BalanceDifference : +-500 (any integer)
+}
+*/
+app.post("/api/user/update_balance", async (req, res) => {
+  // Update the balance of a user by the User Account Number
+  const user = await db.collection("Users").updateOne({"accountnumber" : req.body.UserAccountNumber}, 
+                                                    {$inc : {"accountbalance" : req.body.BalanceDifference}});
+  res.send(user);
+});
+
+//Body of request MUST be in the form of:
+/*
 { 
   "name" : "XXXXX",
   "age" : "XX",
@@ -73,7 +87,6 @@ app.put("/api/user/add", async (req, res) => {
   const user = await db.collection("Users").insertOne(req.body);
   res.send(user);
 });
-
 
 
 // gets the company RAG score
