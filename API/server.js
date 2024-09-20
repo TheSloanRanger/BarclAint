@@ -18,6 +18,10 @@ mongoose
     console.error("Error connecting to MongoDB:", error);
   });
 
+function generateRandomAccountNumber(){
+  return Math.floor(10000000000 + Math.random() * 90000000000);
+}
+
 // this is a basic root path
 app.post("/", (req, res) => {
   res.send("Hello World");
@@ -84,6 +88,15 @@ app.post("/api/user/update_balance", async (req, res) => {
 */
 app.put("/api/user/add", async (req, res) => {
   // Add a new user to the Users collection
+  let accountNumber;
+  let userExists;
+
+  do {
+    accountNumber = generateRandomAccountNumber();
+    userExists = await db.collection("Users").findOne({"accountnumber" : accountNumber});
+  } while(userExists);
+
+  req.body.accountnumber = accountNumber;
   const user = await db.collection("Users").insertOne(req.body);
   res.send(user);
 });
