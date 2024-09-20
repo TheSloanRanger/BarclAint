@@ -1,16 +1,16 @@
 const Joi = require('joi');
 
 const userTransactionSchema = Joi.object({
-    UserAccountNumber : Joi.double().required()
+    UserAccountNumber : Joi.number().required()
 })
 
 const userTransactionToSchema = Joi.object({
     CompanyAccountNumber : Joi.string().required(),
-    UserAccountNumber : Joi.double().required()
+    UserAccountNumber : Joi.number().required()
 });
 
 const userUpdateBalanceSchema = Joi.object({
-    UserAccountNumber : Joi.double().required(),
+    UserAccountNumber : Joi.number().required(),
     BalanceDifference : Joi.number().required()
 });
 
