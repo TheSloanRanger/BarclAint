@@ -1,6 +1,10 @@
 require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
+const Joi = require("joi");
+
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema } = require('./validation_schemas');
+
 const db = mongoose.connection;
 
 const uri =
@@ -78,7 +82,14 @@ app.get("/api/companies/similarCompanies/:accNo", async (req, res) => {
 });
 
 app.post("/api/user_transactions", async (req, res) => {
-  // Return all transactions to and from a specific user by the UserAccountNumber
+
+  // Validate the request body
+  const {error} = userTransactionSchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
+  // Return all transactions from a specific user by the UserAccountNumber
   console.log(req.body.UserAccountNumber);
   const transactions = await db
     .collection("Transactions")
@@ -91,6 +102,13 @@ app.post("/api/user_transactions", async (req, res) => {
 
 
 app.post("/api/user_transactions/to", async (req, res) => {
+
+  // Validate the request body
+  const {error} = userTransactionToSchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
   // Return all transactions from a specific company by the Company Account Number
   const transactions = await db
     .collection("Transactions")
@@ -111,6 +129,13 @@ app.post("/api/user_transactions/to", async (req, res) => {
 }
 */
 app.post("/api/user/update_balance", async (req, res) => {
+
+  // Validate the request body
+  const {error} = userUpdateBalanceSchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
   // Update the balance of a user by the User Account Number
   const user = await db.collection("Users").updateOne({"accountnumber" : req.body.UserAccountNumber}, 
                                                     {$inc : {"accountbalance" : req.body.BalanceDifference}});
@@ -122,11 +147,17 @@ app.post("/api/user/update_balance", async (req, res) => {
 { 
   "name" : "XXXXX",
   "age" : "XX",
-  "accountnumber" : "0000000000",
   "accountbalance" : 500 (any integer)
 }
 */
 app.put("/api/user/add", async (req, res) => {
+
+  // Validate the request body
+  const {error} = userAddSchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
   // Add a new user to the Users collection
   let accountNumber;
   let userExists;
