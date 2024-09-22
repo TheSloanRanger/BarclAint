@@ -246,7 +246,39 @@ app.get("/api/companies/companyScore/:company", async (req, res) => {
   res.send(company);
 });
 
+// TRANSACTION ENDPOINTS
 
+// Endpoint to create a new transaction
+app.post("/api/transactions", async (req, res) => {
+    const { UserAccountNumber, CompanyAccountNumber, Amount } = req.body;
+  
+    // Check if the user has enough balance
+    const user = await db
+      .collection("Users")
+      .findOne({ accountnumber: UserAccountNumber });
+  
+    if (user.accountbalance < Amount) {
+      res.send("Insufficient Balance");
+      return;
+    }
+  
+    // Update the balance of the user
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: UserAccountNumber },
+        { $inc: { accountbalance: -Amount } }
+      );
+  
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
+      from: UserAccountNumber,
+      to: CompanyAccountNumber,
+      Time: new Date(),
+      amount: Amount,
+    });
+    res.send(transaction);
+  });
 
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
