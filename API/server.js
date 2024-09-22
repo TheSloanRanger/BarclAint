@@ -103,6 +103,8 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
       selectedKeys.push(keys[i]);
     }
   }
+
+
   if(selectedKeys.length == 0){
     res.send("No values sent");
     return;
@@ -120,6 +122,8 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
     }
   }
   response = JSON.parse(response);
+  console.log(updateTable)
+  console.log(response)
   db.collection("Companies").findOneAndUpdate({"Account Number": accountNumber},{$set: response});
   res.send("Success");
 });
