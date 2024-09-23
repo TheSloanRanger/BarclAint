@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -176,6 +176,21 @@ app.post("/api/user_transactions/to", async (req, res) => {
     })
     .toArray();
     res.send(transactions);
+
+});
+
+app.post("/api/user_find", async (req, res) => {
+
+  const {error} = UserFindSchema.validate(req.body());
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
+  const user = await db
+    .collection("Users")
+    .find({"accountnumber" : req.body.UserAccountNumber})
+    .toArray();
+    res.send(user);
 
 });
 
