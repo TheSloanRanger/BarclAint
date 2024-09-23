@@ -44,6 +44,7 @@ app.get("/api/companies", async (req, res) => {
   res.send(companies);
 });
 
+// receives the body from 
 app.get("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
   if(typeof accountNumber !== "string"){
@@ -51,11 +52,15 @@ app.get("/api/companies/getCompany", async (req, res) => {
     return
   }else{
     let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
-    console.log(company);
-    console.log(typeof company);
+    if(company === null){
+      res.send("Account not found");
+      return;
+    }
     res.send(company);
   }
 });
+
+
 
 function getRAGScore(company){
   let carbonEmissions = Number(company["Carbon Emissions"]);
