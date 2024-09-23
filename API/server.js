@@ -41,8 +41,20 @@ app.get("/api/companies", async (req, res) => {
   const companies = await db.collection("Companies").find({}).toArray();
   console.log(companies);
   console.log(companies.length);
-  console.log();
   res.send(companies);
+});
+
+app.get("/api/companies/getCompany", async (req, res) => {
+  const accountNumber = req.body["Account Number"];
+  if(typeof accountNumber !== "string"){
+    res.send("Invalid input");
+    return
+  }else{
+    let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+    console.log(company);
+    console.log(typeof company);
+    res.send(company);
+  }
 });
 
 function getRAGScore(company){
