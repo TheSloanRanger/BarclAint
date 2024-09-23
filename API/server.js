@@ -261,12 +261,9 @@ app.post("/api/transactions/create", async (req, res) => {
     const user = await db
       .collection("Users")
       .findOne({ accountnumber: userAccountInt });
-
-
-      console.log(user);
   
     if (user.accountbalance < Amount) {
-      res.send("Insufficient Balance");
+      res.status(400).send({ error: "Insufficient balance" });
       return;
     }
 
@@ -277,7 +274,7 @@ app.post("/api/transactions/create", async (req, res) => {
 
     if (!company) {
         console.log("Company not found");
-        res.send("Company not found");
+        res.status(404).send({ error: "Company not found" });
         return;
         }
 
@@ -300,8 +297,15 @@ app.post("/api/transactions/create", async (req, res) => {
       to: CompanyAccountNumber,
       Time: new Date(),
       amount: Amount,
+      ragScore: ragScore,
     });
-    res.send(transaction);
+    res.send({ message: "Transaction successful", transaction: {
+        from: UserAccountNumber,
+        to: CompanyAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        ragScore: ragScore,
+    } });
   });
 
 // listening to the server on port 3000
