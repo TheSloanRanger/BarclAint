@@ -179,6 +179,15 @@ app.post("/api/user_transactions/to", async (req, res) => {
 
 });
 
+app.post("/api/user_find", async (req, res) => {
+  const user = await db
+    .collection("Users")
+    .find({"accountnumber" : req.body.UserAccountNumber})
+    .toArray();
+    res.send(user);
+
+});
+
 //Body of request MUST be in the form of:
 /*
 {
