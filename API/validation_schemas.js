@@ -28,5 +28,6 @@ module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
     userUpdateBalanceSchema,
+    UserFindSchema,
     userAddSchema
 };
