@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userFindSchema, userAddSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userFindSchema, userAddSchema, companyAddSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -27,6 +27,10 @@ mongoose
 
 function generateRandomAccountNumber(){
   return Math.floor(10000000000 + Math.random() * 90000000000);
+}
+
+function generateRandomBusinessAccountNumber(){
+  return Math.floor(1000000000 + Math.random() * 900000000)
 }
 
 
@@ -164,13 +168,56 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
   res.send("Success");
 });
 
+
+/*
+  receives the following body: 
+  {
+    "Company Name": string,
+    "Spending Category": string,
+    "Carbon Emissions": string,
+    "Waste Management": string,
+    "Sustainability Practices": string,
+    "Summary": string
+  }
+*/
 app.post("/api/companies/addCompany", async (req, res) => {
-  let keys = {};
-  let accountNumber = req.body["Account Number"];
+  let keys = ["Company Name", "Spending Category", "Carbon Emissions", "Waste Management", "Sustainability Practices", "Summary"];
+  let values = []; // the dictionary is going to get stored here with the body values once it has all been validated
+  // const {error} = companyAddSchema.validate(req.body); CANT FIGURE OUT HOW TO WORK ASK JAKE TMRW
+  // if (error) {
+  //   return res.status(400).send(error.details[0].message);
+  // }
+  for(let i=0; i<keys.length;i++){
+    // since these are purely strings and won't require numerical operations, just making sure that they are getting filled
+    if(keys[i] === "Company Name" || keys[i] === "Spending Category" || keys[i] === "Summary"){
+      let temp = req.body[keys[i]];
+      //typeof temp !== 'string' || was inside, but removed for now while i test Joi
+      if(typeof temp !== 'string' || temp.length < 1){
+        res.send(`Invalid ${keys[i]}`);
+        return;
+      }
+      values[keys[i]] = temp;
+    }else if(keys[i] === "Carbon Emissions" || keys[i] === "Waste Management" || keys[i] === "Sustainability Practices"){
+      // this method also accepts decimals, it will just truncate anything after the . ex: 9.9 turns into 9
+      // for example, 1.1 turns into 1, 
+      let temp = parseInt(req.body[keys[i]]);
+      if(isNaN(temp)|| temp < 0 || temp > 10){
+        res.send(`Invalid ${keys[i]}`);
+        return;
+      }
+      values[keys[i]] = toString(temp);
+    }
+  }
+  //https://stackoverflow.com/a/65549541
+  if(Object.keys(keys).length !== Object.keys(values).length){ //tempory solution until i get joi working
+    res.send("Required fields missing");
+    return;
+  }
+  let response = dictionaryToJson(keys, values);
+  res.send(response);
 });
 
 app.post("/api/user_transactions", async (req, res) => {
-
   // Validate the request body
   const {error} = userTransactionSchema.validate(req.body);
   if (error) {
