@@ -274,7 +274,7 @@ app.post("/api/transactions/create", async (req, res) => {
 
     if (!company) {
         console.log("Company not found");
-        res.status(404).send({ error: "Company not found" });
+        res.status(400).send({ error: "Company not found" });
         return;
         }
 
