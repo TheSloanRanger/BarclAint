@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userFindSchema, userAddSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -27,6 +27,35 @@ mongoose
 
 function generateRandomAccountNumber(){
   return Math.floor(10000000000 + Math.random() * 90000000000);
+}
+
+
+function getRAGScore(company){
+  let carbonEmissions = Number(company["Carbon Emissions"]);
+  let wasteManagement = Number(company["Waste Management"]);
+  let sustainabilityPractices = Number(company["Sustainability Practices"]);
+  let ragScore = `${(carbonEmissions+wasteManagement+sustainabilityPractices)/(30)}`;
+  return parseFloat(ragScore);
+}
+
+/*
+my own version of pythons json.dumps() as I could not find an alternative to this on json
+*/
+function dictionaryToJson(selectedKeys, updateTable){
+  console.log("HELLO!!!");
+  let response = "{";
+  console.log(`hello ${"world"}`);
+  for(let i=0; i<selectedKeys.length; i++){
+    if(i!==selectedKeys.length-1){
+      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}",`;
+      response = response.concat(tempString);
+    }else{
+      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}"}`;
+      response = response.concat(tempString);
+    }
+  }
+  response = JSON.parse(response);
+  return response;
 }
 
 // this is a basic root path
@@ -59,16 +88,6 @@ app.get("/api/companies/getCompany", async (req, res) => {
     res.send(company);
   }
 });
-
-
-
-function getRAGScore(company){
-  let carbonEmissions = Number(company["Carbon Emissions"]);
-  let wasteManagement = Number(company["Waste Management"]);
-  let sustainabilityPractices = Number(company["Sustainability Practices"]);
-  let ragScore = `${(carbonEmissions+wasteManagement+sustainabilityPractices)/(30)}`;
-  return parseFloat(ragScore);
-}
 
 // gets the company RAG score
 app.get("/api/companies/companyScore/:accountNumber", async (req, res) => {
@@ -138,22 +157,16 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
     return;
   }
 
-  let response = "{";
-  console.log(`hello ${"world"}`);
-  for(let i=0; i<selectedKeys.length; i++){
-    if(i!==selectedKeys.length-1){
-      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}",`;
-      response = response.concat(tempString);
-    }else{
-      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}"}`;
-      response = response.concat(tempString);
-    }
-  }
-  response = JSON.parse(response);
+  let response = dictionaryToJson(selectedKeys, updateTable);
   console.log(updateTable)
   console.log(response)
   db.collection("Companies").findOneAndUpdate({"Account Number": accountNumber},{$set: response});
   res.send("Success");
+});
+
+app.post("/api/companies/addCompany", async (req, res) => {
+  let keys = {};
+  let accountNumber = req.body["Account Number"];
 });
 
 app.post("/api/user_transactions", async (req, res) => {
