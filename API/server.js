@@ -249,25 +249,49 @@ app.get("/api/companies/companyScore/:company", async (req, res) => {
 // TRANSACTION ENDPOINTS
 
 // Endpoint to create a new transaction
-app.post("/api/transactions", async (req, res) => {
+app.post("/api/transactions/create", async (req, res) => {
+    
     const { UserAccountNumber, CompanyAccountNumber, Amount } = req.body;
+
+    const userAccountInt = parseInt(UserAccountNumber);
+
+    console.log(UserAccountNumber);
   
     // Check if the user has enough balance
     const user = await db
       .collection("Users")
-      .findOne({ accountnumber: UserAccountNumber });
+      .findOne({ accountnumber: userAccountInt });
+
+
+      console.log(user);
   
     if (user.accountbalance < Amount) {
       res.send("Insufficient Balance");
       return;
     }
+
+    // Check if the company exists
+    const company = await db
+      .collection("Companies")
+      .findOne({ "Account Number": CompanyAccountNumber });
+
+    if (!company) {
+        console.log("Company not found");
+        res.send("Company not found");
+        return;
+        }
+
+    // Calculate the RAG score of the company
+    const ragScore = getRAGScore(company);
   
-    // Update the balance of the user
+    // Update the balance and exp of the user:
     await db
       .collection("Users")
       .updateOne(
-        { accountnumber: UserAccountNumber },
-        { $inc: { accountbalance: -Amount } }
+        { accountnumber: userAccountInt },
+        { $inc: { accountbalance: -Amount, UserXP: (
+            Amount * ragScore
+        ) } }
       );
   
     // Create the transaction
