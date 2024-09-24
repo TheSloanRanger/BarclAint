@@ -94,7 +94,7 @@ app.get("/api/companies/lazy_load_company", async (req, res) => {
 });
 
 // receives the body from 
-app.get("/api/companies/getCompany", async (req, res) => {
+app.post("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
   if(typeof accountNumber !== "string" || accountNumber.length === 9){
     res.send("Invalid Account Number");
