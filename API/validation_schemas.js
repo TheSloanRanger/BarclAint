@@ -20,9 +20,14 @@ const userAddSchema = Joi.object({
     UserBalance : Joi.number().required()
 });
 
+const userFindSchema = Joi.object({
+    UserAccountNumber : Joi.number().required()
+});
+
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
     userUpdateBalanceSchema,
+    UserFindSchema,
     userAddSchema
 };

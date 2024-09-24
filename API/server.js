@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -41,9 +41,26 @@ app.get("/api/companies", async (req, res) => {
   const companies = await db.collection("Companies").find({}).toArray();
   console.log(companies);
   console.log(companies.length);
-  console.log();
   res.send(companies);
 });
+
+// receives the body from 
+app.get("/api/companies/getCompany", async (req, res) => {
+  const accountNumber = req.body["Account Number"];
+  if(typeof accountNumber !== "string"){
+    res.send("Invalid input");
+    return
+  }else{
+    let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+    if(company === null){
+      res.send("Account not found");
+      return;
+    }
+    res.send(company);
+  }
+});
+
+
 
 function getRAGScore(company){
   let carbonEmissions = Number(company["Carbon Emissions"]);
@@ -179,6 +196,21 @@ app.post("/api/user_transactions/to", async (req, res) => {
 
 });
 
+app.post("/api/user_find", async (req, res) => {
+
+  const {error} = UserFindSchema.validate(req.body());
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
+  const user = await db
+    .collection("Users")
+    .find({"accountnumber" : req.body.UserAccountNumber})
+    .toArray();
+    res.send(user);
+
+});
+
 //Body of request MUST be in the form of:
 /*
 {
@@ -246,7 +278,67 @@ app.get("/api/companies/companyScore/:company", async (req, res) => {
   res.send(company);
 });
 
+// TRANSACTION ENDPOINTS
 
+// Endpoint to create a new transaction
+app.post("/api/transactions/create", async (req, res) => {
+    
+    const { UserAccountNumber, CompanyAccountNumber, Amount } = req.body;
+
+    const userAccountInt = parseInt(UserAccountNumber);
+
+    console.log(UserAccountNumber);
+  
+    // Check if the user has enough balance
+    const user = await db
+      .collection("Users")
+      .findOne({ accountnumber: userAccountInt });
+  
+    if (user.accountbalance < Amount) {
+      res.status(400).send({ error: "Insufficient balance" });
+      return;
+    }
+
+    // Check if the company exists
+    const company = await db
+      .collection("Companies")
+      .findOne({ "Account Number": CompanyAccountNumber });
+
+    if (!company) {
+        console.log("Company not found");
+        res.status(400).send({ error: "Company not found" });
+        return;
+        }
+
+    // Calculate the RAG score of the company
+    const ragScore = getRAGScore(company);
+  
+    // Update the balance and exp of the user:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: userAccountInt },
+        { $inc: { accountbalance: -Amount, UserXP: (
+            Amount * ragScore
+        ) } }
+      );
+  
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
+      from: UserAccountNumber,
+      to: CompanyAccountNumber,
+      Time: new Date(),
+      amount: Amount,
+      ragScore: ragScore,
+    });
+    res.send({ message: "Transaction successful", transaction: {
+        from: UserAccountNumber,
+        to: CompanyAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        ragScore: ragScore,
+    } });
+  });
 
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
