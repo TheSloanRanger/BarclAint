@@ -309,7 +309,7 @@ app.post("/api/user_transactions/to", async (req, res) => {
 
 app.post("/api/user_find", async (req, res) => {
   console.log("Hello user_find");
-  const {error} = userFindShema.validate(req.body);
+  const {error} = userFindSchema.validate(req.body);
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
