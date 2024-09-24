@@ -44,6 +44,24 @@ app.get("/api/companies", async (req, res) => {
   res.send(companies);
 });
 
+app.get("/api/companies/lazy_load_company", async (req, res) => {
+  try {
+    // Fetch all documents from the Companies collection with only the Company Name and Account Number fields
+    const companies = await db.collection("Companies").find({}, { projection: { "Company Name": 1, "Account Number": 1 } }).toArray();
+
+    // Map the result to the desired format
+    const lazyLoadCompanies = companies.map(company => ({
+      CompanyName: company["Company Name"],
+      AccountNumber: company["Account Number"]
+    }));
+
+    res.status(200).send({ message: "success", lazy_load_companies: lazyLoadCompanies });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while fetching companies.' });
+  }
+});
+
 // receives the body from 
 app.get("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
