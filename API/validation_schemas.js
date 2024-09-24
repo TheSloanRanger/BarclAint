@@ -20,7 +20,7 @@ const userAddSchema = Joi.object({
     UserBalance : Joi.number().required()
 });
 
-const UserFindSchema = Joi.object({
+const userFindSchema = Joi.object({
     UserAccountNumber : Joi.number().required()
 });
 
