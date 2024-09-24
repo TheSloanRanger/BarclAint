@@ -75,11 +75,29 @@ app.get("/api/companies", async (req, res) => {
   res.send(companies);
 });
 
+app.get("/api/companies/lazy_load_company", async (req, res) => {
+  try {
+    // Fetch all documents from the Companies collection with only the Company Name and Account Number fields
+    const companies = await db.collection("Companies").find({}, { projection: { "Company Name": 1, "Account Number": 1 } }).toArray();
+
+    // Map the result to the desired format
+    const lazyLoadCompanies = companies.map(company => ({
+      CompanyName: company["Company Name"],
+      AccountNumber: company["Account Number"]
+    }));
+
+    res.status(200).send({ message: "success", lazy_load_companies: lazyLoadCompanies });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while fetching companies.' });
+  }
+});
+
 // receives the body from 
 app.get("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
-  if(typeof accountNumber !== "string"){
-    res.send("Invalid input");
+  if(typeof accountNumber !== "string" || accountNumber.length === 9){
+    res.send("Invalid Account Number");
     return
   }else{
     let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
@@ -166,6 +184,29 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
   res.send("Success");
 });
 
+/*
+  deletes the company associated to account number
+  account number is sent via body
+  returns success, or an error message if there is anything invalid or if the account number does not exist
+*/
+app.delete("/api/companies/deleteCompany", async (req, res) => {
+  let accountNumber = req.body["Account Number"];
+  // input validation, making sure that the account number fits the criteria for a business account
+  if(typeof accountNumber !== 'string' || accountNumber.length === 10){
+    res.send("Invalid account number");
+    return;
+  }
+  let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+  if(company === null){
+    res.send("Company not found");
+    return; 
+  }
+  db.collection("Companies").deleteOne(
+    {"Account Number": company["Account Number"]},
+    {justOne:true}
+  );
+  res.send(company); 
+});
 
 /*
   receives the following body: 
