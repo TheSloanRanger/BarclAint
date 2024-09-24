@@ -156,6 +156,37 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
   res.send("Success");
 });
 
+/*
+
+*/
+app.post("/api/companies/addCompany", async (req, res) => {
+
+});
+
+/*
+  deletes the company associated to account number
+  account number is sent via body
+  returns success, or an error message if there is anything invalid or if the account number does not exist
+*/
+app.delete("/api/companies/deleteCompany", async (req, res) => {
+  let accountNumber = req.body["Account Number"];
+  // input validation, making sure that the account number fits the criteria for a business account
+  if(typeof accountNumber !== 'string' || accountNumber.length === 10){
+    res.send("Invalid account number");
+    return;
+  }
+  let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+  if(company === null){
+    res.send("Company not found");
+    return; 
+  }
+  db.collection("Companies").deleteOne(
+    {"Account Number": company["Account Number"]},
+    {justOne:true}
+  );
+  res.send(company); 
+});
+
 app.post("/api/user_transactions", async (req, res) => {
 
   // Validate the request body
