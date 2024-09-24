@@ -24,10 +24,20 @@ const UserFindSchema = Joi.object({
     UserAccountNumber : Joi.number().required()
 });
 
+const companyAddSchema = Joi.object({
+    'Company Name': Joi.string().required(),
+    'Spending Category': Joi.string().required(),
+    'Carbon Emissions': Joi.string().required(),
+    'Waste Management': Joi.string().required(),
+    'Sustainability Practices': Joi.string().required(),
+    'Summary': Joi.string().required()
+})
+
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
     userUpdateBalanceSchema,
-    UserFindSchema,
-    userAddSchema
+    userFindSchema,
+    userAddSchema,
+    companyAddSchema
 };
