@@ -36,7 +36,7 @@ const companyAddSchema = Joi.object({
 const rewardAddSchema = Joi.object({
     'Company': Joi.string().required(),
     'VoucherAmount' : Joi.number().required(),
-    'Descripiton': Joi.string().required(),
+    'Description': Joi.string().required(),
     'Awardable': Joi.boolean().required()
 })
 
