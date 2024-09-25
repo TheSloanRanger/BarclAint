@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userFindSchema, userAddSchema, companyAddSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userFindSchema, userAddSchema, companyAddSchema, getCompanySchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -96,7 +96,11 @@ app.get("/api/companies/lazy_load_company", async (req, res) => {
 // receives the body from 
 app.post("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
-  if(typeof accountNumber !== "string" || accountNumber.length !== 9){
+  const {error} = getCompanySchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+  if(accountNumber.length !== 9){
     res.send("Invalid Account Number");
     return
   }else{
@@ -110,10 +114,18 @@ app.post("/api/companies/getCompany", async (req, res) => {
 });
 
 // gets the company RAG score {idid}
-app.get("/api/companies/companyScore/:accountNumber", async (req, res) => {
-  let accountNumber = req.params.accountNumber;
-  const company = await db.collection("Companies").findOne({"Account Number": accountNumber});
-  res.send(`{"RAG":${getRAGScore(company)}}`);
+app.post("/api/companies/companyScore", async (req, res) => {
+  let accountNumbers = req.body.accountNumbers;
+  var response = [];
+  for(var i = 0; i<accountNumbers.length; i++){
+      const company = await db.collection("Companies").findOne({"Account Number": accountNumbers[i]});
+      let ragScore = getRAGScore(company);
+      company["RAG"] = ragScore;
+      response[company["Account Number"]] = ragScore;
+  }
+  response = dictionaryToJson(accountNumbers, response);
+
+  res.send(response);
 });
 
 app.get("/api/companies/similarCompanies/:accNo", async (req, res) => {

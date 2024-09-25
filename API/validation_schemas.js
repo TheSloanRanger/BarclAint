@@ -33,11 +33,16 @@ const companyAddSchema = Joi.object({
     'Summary': Joi.string().required()
 })
 
+const getCompanySchema = Joi.object({
+    'Account Number': Joi.string().required()
+})
+
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
     userUpdateBalanceSchema,
     userFindSchema,
     userAddSchema,
-    companyAddSchema
+    companyAddSchema,
+    getCompanySchema
 };
