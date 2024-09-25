@@ -441,7 +441,7 @@ app.post("/api/user/update_balance", async (req, res) => {
 { 
   "name" : "XXXXX",
   "age" : "XX",
-  "accountbalance" : 500 (any integer)
+  "UserBalance" : 500 (any integer)
 }
 */
 app.put("/api/user/add", async (req, res) => {
@@ -468,25 +468,6 @@ app.put("/api/user/add", async (req, res) => {
 });
 
 //DATE FORMAT STRING -> "YYYY-MM-DD"
-// gets the company RAG score
-app.get("/api/companies/companyScore/:company", async (req, res) => {
-  let companyName = req.params.company;
-  const company = await db
-    .collection("Companies")
-    .find({ "Company Name": companyName })
-    .toArray();
-  var carbonEmissions = Number(company[0]["Carbon Emissions"]);
-  var wasteManagement = Number(company[0]["Waste Management"]);
-  var sustainabilityPractices = Number(company[0]["Sustainability Practices"]);
-  console.log(carbonEmissions);
-  console.log(wasteManagement);
-  console.log(sustainabilityPractices);
-  let ragScore =
-    (carbonEmissions + wasteManagement + sustainabilityPractices) / 30;
-  console.log(ragScore);
-  res.send(company);
-});
-
 app.post("/api/transactions/filterByDate", async (req, res) => {
   const { error } = filterByDateSchema.validate(req.body);
   if (error) {
