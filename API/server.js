@@ -39,6 +39,7 @@ function getRAGScore(company){
   let wasteManagement = Number(company["Waste Management"]);
   let sustainabilityPractices = Number(company["Sustainability Practices"]);
   let ragScore = `${(carbonEmissions+wasteManagement+sustainabilityPractices)/(30)}`;
+
   return parseFloat(ragScore);
 }
 
@@ -130,25 +131,58 @@ app.post("/api/companies/companyScore", async (req, res) => {
 
 app.get("/api/companies/similarCompanies/:accNo", async (req, res) => {
   let accountNumber = req.params.accNo;
-  console.log(accountNumber);
   const company = await db.collection("Companies").findOne({"Account Number": accountNumber});
   var lowestScore = getRAGScore(company); // because the companies won't get shown if they are not equal or better
   const companies = await db.collection("Companies").find({"Spending Category": company["Spending Category"]}).toArray();
   var table = [];
   for(var i=0; i < companies.length; i++){
-    if (companies[i]["Account Number"] === company["Account Number"]){
-      continue;
-    }
+    // if (companies[i]["Account Number"] === company["Account Number"]){
+    //   continue;
+    // }
     let ragScore = getRAGScore(companies[i]);
-    if (ragScore > lowestScore){
-      console.log(`CONTENDER: ${companies[i]["Company Name"]} SCORE: ${ragScore}`);
-      companies[i]["RAG"] = parseFloat(ragScore);
-      table.push(companies[i]);
-      continue;
+    // if (ragScore > lowestScore){
+    companies[i]["RAG"] = ragScore;
+    console.log(`companies[${companies[i]["Company Name"]}] = ${ragScore}`)
+  }
+  //sorting them in order...
+  for(var i = companies.length-1; i>=0; i--){
+    for(var j = 1; j <= i; j++){
+      if (temp = companies[j-1]["RAG"] < companies[j]["RAG"]) {
+        temp = companies[j-1];
+        companies[j-1] = companies[j];
+        companies[j] = temp; 
+      }
     }
-    console.log(`REJECTED: ${companies[i]["Company Name"]} SCORE: ${getRAGScore(companies[i])}`);
-  } 
-  res.send(table);
+  }
+  var response = {};
+  // adding the positioins of each one
+  let searchSize = 5;
+  let foundOG = false // flag for if the original company is in the top 5
+  if(companies.length<5){
+    searchSize = companies.length;
+  }
+  // this is to make sure that the company that they have used is in the top 5 otherwise we need to hunt for it
+  for(let i = 0; i<=searchSize-1; i++){
+    if(companies[i]["Account Number"] === accountNumber){
+      foundOG = true;
+    }
+    response[companies[i]["Account Number"]] = i+1;
+  }
+  // if the company isn't in the top 5 we need to find it's position
+  if(foundOG === false){
+    for(let i=0;i <= companies.length-1; i++){
+      if(companies[i]["Account Number"]===accountNumber){
+        // then we have found the original company in the request
+        response[companies[i]["Account Number"]] = i+1;
+        console.log(accountNumber, typeof accountNumber, response[companies[i]["Account Number"]], response["000000001"], "companies.length = ", companies.length);
+        break;
+      }
+    }
+  }
+  // console.log("GLOBAL LEADERBOARD VVVVVVVVVVVVVVVVV");
+  // console.log(companies);
+  // console.log("TOP 5 VVVVVVVVVVVVVVVVVVV");
+  res.status(200).send(response);
 });
 
 /*
