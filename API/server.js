@@ -531,6 +531,7 @@ app.delete("/api/rewards/delete", async (req, res) => {
   }
 });
 
+// DATE FORMAT STRING -> "YYYY-MM-DD"
 // Add rewardId: expiryDate to user:
 app.post("/api/users/addReward", async (req, res) => {
   const { UserAccountNumber, RewardID, ExpiryDate } = req.body;
@@ -556,7 +557,7 @@ app.post("/api/users/addReward", async (req, res) => {
 
     await db.collection("Users").updateOne(
       { accountnumber: UserAccountNumber },
-      { $push: { rewards: { RewardID: RewardID, ExpiryDate: ExpiryDate } } }
+      { $push: { rewards: { RewardID: RewardID, ExpiryDate: new Date(ExpiryDate) } } }
     );
 
     res.status(200).send({
