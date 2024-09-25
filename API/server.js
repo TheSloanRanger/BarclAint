@@ -417,6 +417,54 @@ app.get("/api/rewards", async (req, res) => {
   }
 });
 
+// Rewards endpoints
+
+// Get all rewards
+app.get("/api/rewards", async (req, res) => {
+  try{
+    const rewards = await db.collection("Rewards").find({}).toArray();
+    res.status(200).send(rewards);
+  }catch(err){
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while fetching rewards.' });
+  }
+});
+
+// Add a new reward
+app.post("/api/rewards/add", async (req, res) => {
+
+  const {error} = rewardAddSchema.validate(req.body);
+  if(error){
+    return res.status(400).send(error.details[0].message);
+  }
+
+  const { companyName, voucherAmount, description, awardable } = req.body;
+  
+  try{
+    //generate rewardID
+    do{
+
+      const rewardID = Math.floor(1000 + Math.random() * 9000);
+      awardExists = await db.collection("Rewards").findOne({"RewardID" : rewardID});
+
+    }while(awardExists);
+
+    const reward = await db.collection("Rewards").insertOne({
+      RewardID: rewardID,
+      Company: companyName,
+      VoucherAmount: voucherAmount,
+      Description: description,
+      Awardable: awardable
+    });
+
+    res.status(200).send({ message: "Reward added successfully", reward: reward });
+  } catch(err) {
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while adding reward.' });
+  }
+});
+
+
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
