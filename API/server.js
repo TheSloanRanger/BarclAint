@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema, filterByDateSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema, filterByDateSchema, rewardAddSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -438,7 +438,7 @@ app.post("/api/rewards/add", async (req, res) => {
     return res.status(400).send(error.details[0].message);
   }
 
-  const { companyName, voucherAmount, description, awardable } = req.body;
+  const { Company, VoucherAmount, Description, Awardable } = req.body;
   
   try{
     //generate rewardID
@@ -451,10 +451,10 @@ app.post("/api/rewards/add", async (req, res) => {
 
     const reward = await db.collection("Rewards").insertOne({
       RewardID: rewardID,
-      Company: companyName,
-      VoucherAmount: voucherAmount,
-      Description: description,
-      Awardable: awardable
+      Company: Company,
+      VoucherAmount: VoucherAmount,
+      Description: Description,
+      Awardable: Awardable
     });
 
     res.status(200).send({ message: "Reward added successfully", reward: reward });

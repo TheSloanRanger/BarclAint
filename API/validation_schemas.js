@@ -60,5 +60,6 @@ module.exports = {
     userAddSchema,
     companyAddSchema,
     getCompanySchema,
-    filterByDateSchema
+    filterByDateSchema,
+    rewardAddSchema
 };
