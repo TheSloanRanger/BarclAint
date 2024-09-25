@@ -10,6 +10,8 @@ const {
   userAddSchema,
   UserFindSchema,
   filterByDateSchema,
+  getCompanySchema,
+  companyAddSchema,
   rewardAddSchema,
 } = require("./validation_schemas");
 
@@ -277,9 +279,64 @@ app.put("/api/companies/updateEnvironmentalImpactScore", async (req, res) => {
 });
 
 /*
-
+  receives the following body: 
+  {
+    "Company Name": string,
+    "Spending Category": string,
+    "Carbon Emissions": string,
+    "Waste Management": string,
+    "Sustainability Practices": string,
+    "Summary": string
+  }
 */
-app.post("/api/companies/addCompany", async (req, res) => {});
+app.post("/api/companies/addCompany", async (req, res) => {
+  let keys = ["Company Name", "Spending Category", "Carbon Emissions", "Waste Management", "Sustainability Practices", "Summary"];
+  let values = []; // the dictionary is going to get stored here with the body values once it has all been validated
+  const {error} = companyAddSchema.validate(req.body);// CANT FIGURE OUT HOW TO WORK ASK JAKE TMRW
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+  for(let i=0; i<keys.length;i++){
+    // since these are purely strings and won't require numerical operations, just making sure that they are getting filled
+    if(keys[i] === "Company Name" || keys[i] === "Spending Category" || keys[i] === "Summary"){
+      let temp = req.body[keys[i]];
+      //typeof temp !== 'string' || was inside, but removed for now while i test Joi
+      if(typeof temp !== 'string' || temp.length < 1){
+        res.send(`Invalid ${keys[i]}`);
+        return;
+      }
+      values[keys[i]] = temp;
+    }else if(keys[i] === "Carbon Emissions" || keys[i] === "Waste Management" || keys[i] === "Sustainability Practices"){
+      // this method also accepts decimals, it will just truncate anything after the . ex: 9.9 turns into 9
+      // for example, 1.1 turns into 1,
+      let temp = parseInt(req.body[keys[i]]);
+      if(isNaN(temp)|| temp < 0 || temp > 10){
+        res.send(`Invalid ${keys[i]}`);
+        return;
+      }
+      values[keys[i]] = temp.toString();
+    }
+  }
+  //https://stackoverflow.com/a/65549541
+  if(Object.keys(keys).length !== Object.keys(values).length){ //tempory solution until i get joi working
+    res.send("Required fields missing");
+    return;
+  }
+
+  let accountNumber;
+  let companyExists;
+  // loop makes sure that the account number is valid, probably need to make a more efficient way to do this in the future
+  do {
+    accountNumber = generateRandomBusinessAccountNumber();
+    companyExists = await db.collection("Companies").findOne({"Account Number" : accountNumber});
+  } while(companyExists);
+
+  values['Account Number'] = accountNumber.toString()
+  keys.push('Account Number');
+  let response = dictionaryToJson(keys, values);
+  let company = await db.collection("Companies").insertOne(response);
+  res.send(response); 
+});
 
 /*
   deletes the company associated to account number
@@ -384,7 +441,7 @@ app.post("/api/user/update_balance", async (req, res) => {
 { 
   "name" : "XXXXX",
   "age" : "XX",
-  "accountbalance" : 500 (any integer)
+  "UserBalance" : 500 (any integer)
 }
 */
 app.put("/api/user/add", async (req, res) => {
@@ -411,25 +468,6 @@ app.put("/api/user/add", async (req, res) => {
 });
 
 //DATE FORMAT STRING -> "YYYY-MM-DD"
-// gets the company RAG score
-app.get("/api/companies/companyScore/:company", async (req, res) => {
-  let companyName = req.params.company;
-  const company = await db
-    .collection("Companies")
-    .find({ "Company Name": companyName })
-    .toArray();
-  var carbonEmissions = Number(company[0]["Carbon Emissions"]);
-  var wasteManagement = Number(company[0]["Waste Management"]);
-  var sustainabilityPractices = Number(company[0]["Sustainability Practices"]);
-  console.log(carbonEmissions);
-  console.log(wasteManagement);
-  console.log(sustainabilityPractices);
-  let ragScore =
-    (carbonEmissions + wasteManagement + sustainabilityPractices) / 30;
-  console.log(ragScore);
-  res.send(company);
-});
-
 app.post("/api/transactions/filterByDate", async (req, res) => {
   const { error } = filterByDateSchema.validate(req.body);
   if (error) {
