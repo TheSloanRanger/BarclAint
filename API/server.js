@@ -531,6 +531,47 @@ app.delete("/api/rewards/delete", async (req, res) => {
   }
 });
 
+// Add rewardId: expiryDate to user:
+app.post("/api/users/addReward", async (req, res) => {
+  const { UserAccountNumber, RewardID, ExpiryDate } = req.body;
+
+  try {
+    const user = await db.collection("Users").findOne({
+      accountnumber: UserAccountNumber,
+    });
+
+    if (!user) {
+      res.status(400).send({ error: "User not found" });
+      return;
+    }
+
+    const reward = await db.collection("Rewards").findOne({
+      RewardID: RewardID,
+    });
+
+    if (!reward) {
+      res.status(400).send({ error: "Reward not found" });
+      return;
+    }
+
+    await db.collection("Users").updateOne(
+      { accountnumber: UserAccountNumber },
+      { $push: { rewards: { RewardID: RewardID, ExpiryDate: ExpiryDate } } }
+    );
+
+    res.status(200).send({
+      message: "Reward added to user successfully",
+      user: user,
+      reward: reward,
+    });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send({ error: "An error occurred while adding reward to user." });
+  }
+});
+
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
