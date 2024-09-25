@@ -37,6 +37,12 @@ const getCompanySchema = Joi.object({
     'Account Number': Joi.string().required()
 })
 
+const filterByDateSchema = Joi.object({
+    userAccountNumber: Joi.number().required(),
+    startDate: Joi.string().required(),
+    endDate: Joi.string().required()
+})
+
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
@@ -44,5 +50,6 @@ module.exports = {
     UserFindSchema,
     userAddSchema,
     companyAddSchema,
-    getCompanySchema
+    getCompanySchema,
+    filterByDateSchema
 };
