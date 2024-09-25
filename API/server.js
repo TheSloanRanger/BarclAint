@@ -404,7 +404,18 @@ app.post("/api/transactions/create", async (req, res) => {
         amount: Amount,
         ragScore: ragScore,
     } });
-  });
+});
+
+// Rewards endpoints
+app.get("/api/rewards", async (req, res) => {
+  try{
+    const rewards = await db.collection("Rewards").find({}).toArray();
+    res.status(200).send(rewards);
+  }catch(err){
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while fetching rewards.' });
+  }
+});
 
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
