@@ -37,6 +37,38 @@ function generateRandomAccountNumber() {
   return Math.floor(10000000000 + Math.random() * 90000000000);
 }
 
+
+function generateRandomBusinessAccountNumber(){
+  return Math.floor(100000000 + Math.random() * 900000000);
+}
+
+function getRAGScore(company){
+  let carbonEmissions = Number(company["Carbon Emissions"]);
+  let wasteManagement = Number(company["Waste Management"]);
+  let sustainabilityPractices = Number(company["Sustainability Practices"]);
+  let ragScore = `${(carbonEmissions+wasteManagement+sustainabilityPractices)/(30)}`;
+
+  return parseFloat(ragScore);
+}
+
+/*
+my own version of pythons json.dumps() as I could not find an alternative to this on json
+*/
+function dictionaryToJson(selectedKeys, updateTable){
+  let response = "{";
+  for(let i=0; i<selectedKeys.length; i++){
+    if(i!==selectedKeys.length-1){
+      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}",`;
+      response = response.concat(tempString);
+    }else{
+      let tempString = `"${selectedKeys[i]}":"${updateTable[selectedKeys[i]]}"}`;
+      response = response.concat(tempString);
+    }
+  }
+  response = JSON.parse(response);
+  return response;
+}
+
 // this is a basic root path
 app.get("/", (req, res) => {
   console.log("Hello World");
@@ -78,16 +110,18 @@ app.get("/api/companies/lazy_load_company", async (req, res) => {
 });
 
 // receives the body from
-app.get("/api/companies/getCompany", async (req, res) => {
+app.post("/api/companies/getCompany", async (req, res) => {
   const accountNumber = req.body["Account Number"];
-  if (typeof accountNumber !== "string" || accountNumber.length === 9) {
+  const {error} = getCompanySchema.validate(req.body);
+  if (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+  if(accountNumber.length !== 9){
     res.send("Invalid Account Number");
-    return;
-  } else {
-    let company = await db
-      .collection("Companies")
-      .findOne({ "Account Number": accountNumber });
-    if (company === null) {
+    return
+  }else{
+    let company = await db.collection("Companies").findOne({"Account Number": accountNumber});
+    if(company === null){
       res.send("Account not found");
       return;
     }
@@ -106,46 +140,74 @@ function getRAGScore(company) {
 }
 
 // gets the company RAG score
-app.get("/api/companies/companyScore/:accountNumber", async (req, res) => {
-  let accountNumber = req.params.accountNumber;
-  const company = await db
-    .collection("Companies")
-    .findOne({ "Account Number": accountNumber });
-  res.send(`{"RAG":${getRAGScore(company)}}`);
+app.post("/api/companies/companyScore", async (req, res) => {
+  let accountNumbers = req.body.accountNumbers;
+  var response = [];
+  for(var i = 0; i<accountNumbers.length; i++){
+      const company = await db.collection("Companies").findOne({"Account Number": accountNumbers[i]});
+      let ragScore = getRAGScore(company);
+      company["RAG"] = ragScore;
+      response[company["Account Number"]] = ragScore;
+  }
+  response = dictionaryToJson(accountNumbers, response);
+
+  res.send(response);
 });
 
 app.get("/api/companies/similarCompanies/:accNo", async (req, res) => {
   let accountNumber = req.params.accNo;
-  console.log(accountNumber);
-  const company = await db
-    .collection("Companies")
-    .findOne({ "Account Number": accountNumber });
+  const company = await db.collection("Companies").findOne({"Account Number": accountNumber});
   var lowestScore = getRAGScore(company); // because the companies won't get shown if they are not equal or better
-  const companies = await db
-    .collection("Companies")
-    .find({ "Spending Category": company["Spending Category"] })
-    .toArray();
+  const companies = await db.collection("Companies").find({"Spending Category": company["Spending Category"]}).toArray();
   var table = [];
-  for (var i = 0; i < companies.length; i++) {
-    if (companies[i]["Account Number"] === company["Account Number"]) {
-      continue;
-    }
+  for(var i=0; i < companies.length; i++){
+    // if (companies[i]["Account Number"] === company["Account Number"]){
+    //   continue;
+    // }
     let ragScore = getRAGScore(companies[i]);
-    if (ragScore > lowestScore) {
-      console.log(
-        `CONTENDER: ${companies[i]["Company Name"]} SCORE: ${ragScore}`
-      );
-      companies[i]["RAG"] = parseFloat(ragScore);
-      table.push(companies[i]);
-      continue;
-    }
-    console.log(
-      `REJECTED: ${companies[i]["Company Name"]} SCORE: ${getRAGScore(
-        companies[i]
-      )}`
-    );
+    // if (ragScore > lowestScore){
+    companies[i]["RAG"] = ragScore;
+    console.log(`companies[${companies[i]["Company Name"]}] = ${ragScore}`)
   }
-  res.send(table);
+  //sorting them in order...
+  for(var i = companies.length-1; i>=0; i--){
+    for(var j = 1; j <= i; j++){
+      if (temp = companies[j-1]["RAG"] < companies[j]["RAG"]) {
+        temp = companies[j-1];
+        companies[j-1] = companies[j];
+        companies[j] = temp; 
+      }
+    }
+  }
+  var response = {};
+  // adding the positioins of each one
+  let searchSize = 5;
+  let foundOG = false // flag for if the original company is in the top 5
+  if(companies.length<5){
+    searchSize = companies.length;
+  }
+  // this is to make sure that the company that they have used is in the top 5 otherwise we need to hunt for it
+  for(let i = 0; i<=searchSize-1; i++){
+    if(companies[i]["Account Number"] === accountNumber){
+      foundOG = true;
+    }
+    response[companies[i]["Account Number"]] = i+1;
+  }
+  // if the company isn't in the top 5 we need to find it's position
+  if(foundOG === false){
+    for(let i=0;i <= companies.length-1; i++){
+      if(companies[i]["Account Number"]===accountNumber){
+        // then we have found the original company in the request
+        response[companies[i]["Account Number"]] = i+1;
+        console.log(accountNumber, typeof accountNumber, response[companies[i]["Account Number"]], response["000000001"], "companies.length = ", companies.length);
+        break;
+      }
+    }
+  }
+  // console.log("GLOBAL LEADERBOARD VVVVVVVVVVVVVVVVV");
+  // console.log(companies);
+  // console.log("TOP 5 VVVVVVVVVVVVVVVVVVV");
+  res.status(200).send(response);
 });
 
 /*
