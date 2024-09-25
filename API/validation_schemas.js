@@ -20,7 +20,7 @@ const userAddSchema = Joi.object({
     UserBalance : Joi.number().required()
 });
 
-const userFindSchema = Joi.object({
+const UserFindSchema = Joi.object({
     UserAccountNumber : Joi.number().required()
 });
 
@@ -33,16 +33,33 @@ const companyAddSchema = Joi.object({
     'Summary': Joi.string().required()
 })
 
+const rewardAddSchema = Joi.object({
+    'Company': Joi.string().required(),
+    'VoucherAmount' : Joi.number().required(),
+    'Description': Joi.string().required(),
+    'Awardable': Joi.boolean().required()
+})
+
+
+
 const getCompanySchema = Joi.object({
     'Account Number': Joi.string().required()
+})
+
+const filterByDateSchema = Joi.object({
+    userAccountNumber: Joi.number().required(),
+    startDate: Joi.string().required(),
+    endDate: Joi.string().required()
 })
 
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
     userUpdateBalanceSchema,
-    userFindSchema,
+    UserFindSchema,
     userAddSchema,
     companyAddSchema,
-    getCompanySchema
+    getCompanySchema,
+    filterByDateSchema,
+    rewardAddSchema
 };
