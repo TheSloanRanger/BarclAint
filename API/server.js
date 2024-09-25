@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Joi = require("joi");
 
-const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema } = require('./validation_schemas');
+const { userTransactionSchema, userTransactionToSchema, userUpdateBalanceSchema, userAddSchema, UserFindSchema, filterByDateSchema } = require('./validation_schemas');
 
 const db = mongoose.connection;
 
@@ -311,7 +311,7 @@ app.put("/api/user/add", async (req, res) => {
   res.send(user);
 });
 
-
+//DATE FORMAT STRING -> "YYYY-MM-DD"
 // gets the company RAG score
 app.get("/api/companies/companyScore/:company", async (req, res) => {
   let companyName = req.params.company;
@@ -325,6 +325,23 @@ app.get("/api/companies/companyScore/:company", async (req, res) => {
   let ragScore = (carbonEmissions+wasteManagement+sustainabilityPractices)/(30);
   console.log(ragScore);
   res.send(company);
+});
+
+app.post("/api/transactions/filterByDate", async (req, res) => {
+  const {error} = filterByDateSchema.validate(req.body);
+  if(error){
+    return res.status(400).send(error.details[0].message);
+  }
+
+  const {userAccountNumber, startDate, endDate} = req.body;
+
+  try{
+    const transactions = await db.collection("Transactions").find({from: userAccountNumber, Time: {$gte: new Date(startDate), $lte: new Date(endDate)}}).toArray();
+    res.send(transactions);
+  }catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'An error occurred while fetching transactions.' });
+  }
 });
 
 // TRANSACTION ENDPOINTS
