@@ -9,13 +9,13 @@ const rewards_router = require("./routes/rewards");
 
 const app = express();
 
+app.use(express.json());
+app.use(cors());
+
 app.use(transaction_router);
 app.use(companies_router);
 app.use(users_router);
 app.use(rewards_router);
-
-app.use(express.json());
-app.use(cors());
 
 // this is a basic root path
 app.get("/", (req, res) => {

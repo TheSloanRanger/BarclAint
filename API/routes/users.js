@@ -134,7 +134,7 @@ users_router.post("/api/user_find", async (req, res) => {
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
-
+  console.log(error);
   const user = await db
     .collection("Users")
     .find({ accountnumber: req.body.UserAccountNumber })
@@ -155,7 +155,6 @@ users_router.post("/api/user/update_balance", async (req, res) => {
   if (error) {
     return res.status(400).send(error.details[0].message);
   }
-
   // Update the balance of a user by the User Account Number
   const user = await db
     .collection("Users")

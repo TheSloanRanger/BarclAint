@@ -2,6 +2,11 @@ const express = require("express");
 const companies_router = express.Router();
 const { db } = require("../db");
 
+const {
+  getCompanySchema,
+  companyAddSchema,
+} = require("../validation_schemas");
+
 // make any new endpoints here (e.g /api/companies):
 companies_router.get("/api/companies", async (req, res) => {
   // return all documents from the companies mongodb collection:
