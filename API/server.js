@@ -1,7 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const Joi = require("joi");
+
+
 
 const {
   userTransactionSchema,
@@ -22,8 +25,9 @@ const uri =
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
-app.use(express.json());
+
 
 // connecting to mongoDB database using mongoose
 mongoose
