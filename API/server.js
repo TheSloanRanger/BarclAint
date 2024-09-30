@@ -7,7 +7,13 @@ const companies_router = require("./routes/companies");
 const users_router = require("./routes/users");
 const rewards_router = require("./routes/rewards");
 
+const corsOptions = {
+  origin: "*",
+  optionsSuccessStatus: 200,
+};
+
 const app = express();
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cors());
 
