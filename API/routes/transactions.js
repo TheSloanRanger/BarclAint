@@ -3,6 +3,12 @@ const { getRAGScore } = require("../common");
 const { db } = require("../db");
 const transaction_router = express.Router();
 
+const {
+  filterByDateSchema,
+  companyAddSchema,
+} = require("../validation_schemas");
+
+
 // Endpoint to create a new transaction
 transaction_router.post("/api/transactions/create", async (req, res) => {
   const { UserAccountNumber, RecipientAccountNumber, Amount } = req.body;
