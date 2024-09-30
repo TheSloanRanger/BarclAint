@@ -8,7 +8,10 @@ transaction_router.post("/api/transactions/create", async (req, res) => {
   const { UserAccountNumber, RecipientAccountNumber, Amount } = req.body;
 
   console.log(UserAccountNumber);
-
+  if(UserAccountNumber === RecipientAccountNumber){
+    res.send("Cannot send money to yourself");
+    return;
+  }
   // Check if the user has enough balance
   const user = await db
     .collection("Users")

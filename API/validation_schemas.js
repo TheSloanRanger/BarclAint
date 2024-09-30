@@ -1,16 +1,16 @@
 const Joi = require('joi');
 
 const userTransactionSchema = Joi.object({
-    UserAccountNumber : Joi.number().required()
+    UserAccountNumber : Joi.string().required()
 })
 
 const userTransactionToSchema = Joi.object({
     CompanyAccountNumber : Joi.string().required(),
-    UserAccountNumber : Joi.number().required()
+    UserAccountNumber : Joi.string().required()
 });
 
 const userUpdateBalanceSchema = Joi.object({
-    UserAccountNumber : Joi.number().required(),
+    UserAccountNumber : Joi.string().required(),
     BalanceDifference : Joi.number().required()
 });
 
@@ -21,7 +21,7 @@ const userAddSchema = Joi.object({
 });
 
 const UserFindSchema = Joi.object({
-    UserAccountNumber : Joi.number().required()
+    UserAccountNumber : Joi.string().required()
 });
 
 const companyAddSchema = Joi.object({
@@ -47,7 +47,7 @@ const getCompanySchema = Joi.object({
 })
 
 const filterByDateSchema = Joi.object({
-    userAccountNumber: Joi.number().required(),
+    userAccountNumber: Joi.string().required(),
     startDate: Joi.string().required(),
     endDate: Joi.string().required()
 })
