@@ -5,9 +5,7 @@ const transaction_router = express.Router();
 
 // Endpoint to create a new transaction
 transaction_router.post("/api/transactions/create", async (req, res) => {
-  const { UserAccountNumber, CompanyAccountNumber, Amount } = req.body;
-
-  const userAccountInt = parseInt(UserAccountNumber);
+  const { UserAccountNumber, RecipientAccountNumber, Amount } = req.body;
 
   console.log(UserAccountNumber);
 
@@ -24,43 +22,85 @@ transaction_router.post("/api/transactions/create", async (req, res) => {
   // Check if the company exists
   const company = await db
     .collection("Companies")
-    .findOne({ "Account Number": CompanyAccountNumber });
+    .findOne({ "Account Number": RecipientAccountNumber });
 
-  if (!company) {
-    console.log("Company not found");
-    res.status(400).send({ error: "Company not found" });
-    return;
-  }
-
-  // Calculate the RAG score of the company
-  const ragScore = getRAGScore(company);
-
-  // Update the balance and exp of the user:
-  await db
+  const recipient = await db
     .collection("Users")
-    .updateOne(
-      { accountnumber: userAccountInt },
-      { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
-    );
+    .findOne({ accountnumber: UserAccountNumber });
 
-  // Create the transaction
-  const transaction = await db.collection("Transactions").insertOne({
-    from: UserAccountNumber,
-    to: CompanyAccountNumber,
-    Time: new Date(),
-    amount: Amount,
-    ragScore: ragScore,
-  });
-  res.send({
-    message: "Transaction successful",
-    transaction: {
+  if (company && !recipient) {
+    console.log("Recipient is a company.");
+
+    // Calculate the RAG score of the company
+    const ragScore = getRAGScore(company);
+
+    // Update the balance and exp of the user:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: UserAccountNumber },
+        { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
+      );
+
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
       from: UserAccountNumber,
-      to: CompanyAccountNumber,
+      to: RecipientAccountNumber,
       Time: new Date(),
       amount: Amount,
       ragScore: ragScore,
-    },
-  });
+      type: "Company Transaction",
+    });
+    res.send({
+      message: "Transaction successful",
+      transaction: {
+        from: UserAccountNumber,
+        to: RecipientAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        ragScore: ragScore,
+        type: "Company Transaction",
+      },
+    });
+  } else if (recipient && !company) {
+    console.log("Recipient is a user.");
+
+    // Update the balance and exp of the user:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: UserAccountNumber },
+        { $inc: { accountbalance: -Amount } }
+      );
+
+    // Update the balance and exp of the recipient:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: RecipientAccountNumber },
+        { $inc: { accountbalance: Amount } }
+      );
+
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
+      from: UserAccountNumber,
+      to: RecipientAccountNumber,
+      Time: new Date(),
+      amount: Amount,
+      type: "User Transaction",
+    });
+
+    res.send({
+      message: "Transaction successful",
+      transaction: {
+        from: UserAccountNumber,
+        to: RecipientAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        type: "User Transaction",
+      },
+    });
+  }
 });
 
 transaction_router.post("/api/transactions/filterByDate", async (req, res) => {
