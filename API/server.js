@@ -8,7 +8,6 @@ const users_router = require("./routes/users");
 const rewards_router = require("./routes/rewards");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 app.use(cors());
 
