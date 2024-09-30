@@ -4,12 +4,14 @@ const express = require("express");
 const transaction_router = require("./routes/transactions");
 const companies_router = require("./routes/companies");
 const users_router = require("./routes/users");
+const rewards_router = require("./routes/rewards");
 
 const app = express();
 app.use(express.json());
 app.use(transaction_router);
 app.use(companies_router);
 app.use(users_router);
+app.use(rewards_router);
 
 // this is a basic root path
 app.get("/", (req, res) => {
