@@ -7,26 +7,15 @@ const companies_router = require("./routes/companies");
 const users_router = require("./routes/users");
 const rewards_router = require("./routes/rewards");
 
-const corsOptions = {
-  origin: "*",
-  optionsSuccessStatus: 200,
-};
-
 const app = express();
-app.use(cors(corsOptions));
+
+app.use(transaction_router);
+app.use(companies_router);
+app.use(users_router);
+app.use(rewards_router);
+
 app.use(express.json());
 app.use(cors());
-
-
-// connecting to mongoDB database using mongoose
-mongoose
-  .connect(uri)
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((error) => {
-    console.error("Error connecting to MongoDB:", error);
-  });
 
 // this is a basic root path
 app.get("/", (req, res) => {

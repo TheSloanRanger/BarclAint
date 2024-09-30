@@ -254,28 +254,6 @@ companies_router.get("/api/companies/lazy_load_company", async (req, res) => {
   }
 });
 
-// receives the body from
-companies_router.post("/api/companies/getCompany", async (req, res) => {
-  const accountNumber = req.body["Account Number"];
-  const { error } = getCompanySchema.validate(req.body);
-  if (error) {
-    return res.status(400).send(error.details[0].message);
-  }
-  if (accountNumber.length !== 9) {
-    res.send("Invalid Account Number");
-    return;
-  } else {
-    let company = await db
-      .collection("Companies")
-      .findOne({ "Account Number": accountNumber });
-    if (company === null) {
-      res.send("Account not found");
-      return;
-    }
-    res.send(company);
-  }
-});
-
 // gets the company RAG score
 companies_router.post("/api/companies/companyScore", async (req, res) => {
   let accountNumbers = req.body.accountNumbers;
