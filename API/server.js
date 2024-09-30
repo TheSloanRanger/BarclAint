@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 
 const transaction_router = require("./routes/transactions");
 const companies_router = require("./routes/companies");
@@ -7,6 +8,7 @@ const users_router = require("./routes/users");
 const rewards_router = require("./routes/rewards");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(transaction_router);
 app.use(companies_router);
