@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const Joi = require("joi");
 
 const {
@@ -22,8 +23,7 @@ const uri =
 
 const app = express();
 app.use(express.json());
-
-app.use(express.json());
+app.use(cors());
 
 // connecting to mongoDB database using mongoose
 mongoose
@@ -366,19 +366,27 @@ app.delete("/api/companies/deleteCompany", async (req, res) => {
 
 app.post("/api/user_transactions", async (req, res) => {
   // Validate the request body
-  const { error } = userTransactionSchema.validate(req.body);
-  if (error) {
-    return res.status(400).send(error.details[0].message);
-  }
 
-  // Return all transactions from a specific user by the UserAccountNumber
-  console.log(req.body.UserAccountNumber);
-  const transactions = await db
-    .collection("Transactions")
-    .find({ from: req.body.UserAccountNumber })
-    .toArray();
-  res.send(transactions);
-  console.log("Hello");
+  try {
+    const { error } = userTransactionSchema.validate(req.body);
+    if (error) {
+      return res.status(400).send(error.details[0].message);
+    }
+
+    // Return all transactions from a specific user by the UserAccountNumber
+    console.log(req.body.UserAccountNumber);
+    const transactions = await db
+      .collection("Transactions")
+      .find({ from: req.body.UserAccountNumber })
+      .toArray();
+    res.send(transactions);
+    console.log("Hello");
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send({ error: "An error occurred while fetching transactions." });
+  }
 });
 
 app.post("/api/user_transactions/to", async (req, res) => {
@@ -494,19 +502,19 @@ app.post("/api/transactions/filterByDate", async (req, res) => {
 });
 
 // TRANSACTION ENDPOINTS
-
 // Endpoint to create a new transaction
 app.post("/api/transactions/create", async (req, res) => {
-  const { UserAccountNumber, CompanyAccountNumber, Amount } = req.body;
-
-  const userAccountInt = parseInt(UserAccountNumber);
+  const { UserAccountNumber, RecipientAccountNumber, Amount } = req.body;
 
   console.log(UserAccountNumber);
-
+  if(UserAccountNumber === RecipientAccountNumber){
+    res.status(400).send({ error:"Cannot send money to yourself"});
+    return;
+  }
   // Check if the user has enough balance
   const user = await db
     .collection("Users")
-    .findOne({ accountnumber: userAccountInt });
+    .findOne({ accountnumber: UserAccountNumber });
 
   if (user.accountbalance < Amount) {
     res.status(400).send({ error: "Insufficient balance" });
@@ -516,44 +524,87 @@ app.post("/api/transactions/create", async (req, res) => {
   // Check if the company exists
   const company = await db
     .collection("Companies")
-    .findOne({ "Account Number": CompanyAccountNumber });
+    .findOne({ "Account Number": RecipientAccountNumber });
 
-  if (!company) {
-    console.log("Company not found");
-    res.status(400).send({ error: "Company not found" });
-    return;
-  }
-
-  // Calculate the RAG score of the company
-  const ragScore = getRAGScore(company);
-
-  // Update the balance and exp of the user:
-  await db
+  const recipient = await db
     .collection("Users")
-    .updateOne(
-      { accountnumber: userAccountInt },
-      { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
-    );
+    .findOne({ accountnumber: RecipientAccountNumber });
 
-  // Create the transaction
-  const transaction = await db.collection("Transactions").insertOne({
-    from: UserAccountNumber,
-    to: CompanyAccountNumber,
-    Time: new Date(),
-    amount: Amount,
-    ragScore: ragScore,
-  });
-  res.send({
-    message: "Transaction successful",
-    transaction: {
+  if (company && !recipient) {
+    console.log("Recipient is a company.");
+
+    // Calculate the RAG score of the company
+    const ragScore = getRAGScore(company);
+
+    // Update the balance and exp of the user:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: UserAccountNumber },
+        { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
+      );
+
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
       from: UserAccountNumber,
-      to: CompanyAccountNumber,
+      to: RecipientAccountNumber,
       Time: new Date(),
       amount: Amount,
       ragScore: ragScore,
-    },
-  });
+      type: "Company Transaction",
+    });
+    res.send({
+      message: "Transaction successful",
+      transaction: {
+        from: UserAccountNumber,
+        to: RecipientAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        ragScore: ragScore,
+        type: "Company Transaction",
+      },
+    });
+  } else if (recipient && !company) {
+    console.log("Recipient is a user.");
+
+    // Update the balance and exp of the user:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: UserAccountNumber },
+        { $inc: { accountbalance: -Amount } }
+      );
+
+    // Update the balance and exp of the recipient:
+    await db
+      .collection("Users")
+      .updateOne(
+        { accountnumber: RecipientAccountNumber },
+        { $inc: { accountbalance: Amount } }
+      );
+
+    // Create the transaction
+    const transaction = await db.collection("Transactions").insertOne({
+      from: UserAccountNumber,
+      to: RecipientAccountNumber,
+      Time: new Date(),
+      amount: Amount,
+      type: "User Transaction",
+    });
+
+    res.send({
+      message: "Transaction successful",
+      transaction: {
+        from: UserAccountNumber,
+        to: RecipientAccountNumber,
+        Time: new Date(),
+        amount: Amount,
+        type: "User Transaction",
+      },
+    });
+  }
 });
+
 
 // Rewards endpoints
 app.get("/api/rewards", async (req, res) => {
