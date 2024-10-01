@@ -120,6 +120,39 @@ function dictionaryToJson(selectedKeys, updateTable){
   return response;
 }
 
+
+async function calculateGameification(){
+  const BASE_XP = 5; 
+  const MULTIPLIER = 1.5;
+
+  const user = await db
+        .collection("Users")
+        .findOne({ accountnumber: UserAccountNumber });
+
+  function getXPForLevel(level) {
+    const baseLevel = level % 10 || 10; // Levels repeat every 10 levels
+    return Math.floor(BASE_XP * MULTIPLIER ** (baseLevel - 1)); // Multiply XP by power of multiplier
+
+  }
+
+  function useCalculateLevel(user) {
+    let level = 1, xpForNextLevel = getXPForLevel(level), xpAccumulated = 0;
+
+    while (user.UserXP >= xpAccumulated + xpForNextLevel) {
+      xpAccumulated += xpForNextLevel;
+      xpForNextLevel = getXPForLevel(++level);
+    }
+
+    return { level};
+  }
+
+  if((useCalculateLevel().level % 10) === 0){
+    io.to(connectedUsers.get(UserAccountNumber)).emit("notification", "New Reward");
+
+  }
+}
+
+
 // this is a basic root path
 app.get("/", (req, res) => {
   console.log("Hello World");
@@ -560,7 +593,6 @@ app.post("/api/transactions/create", async (req, res) => {
   const {error} = createTransactionSchema.validate(req.body);
   const { UserAccountNumber, RecipientAccountNumber, Amount, Reference } = req.body;
 
-  console.log(UserAccountNumber);
   if(UserAccountNumber === RecipientAccountNumber){
     res.status(400).send({ error:"Cannot send money to yourself"});
     return;
@@ -584,8 +616,8 @@ app.post("/api/transactions/create", async (req, res) => {
     .collection("Users")
     .findOne({ accountnumber: RecipientAccountNumber });
 
+  //recipient is a company
   if (company && !recipient) {
-    console.log("Recipient is a company.");
 
     // Calculate the RAG score of the company
     const ragScore = getRAGScore(company);
@@ -598,77 +630,8 @@ app.post("/api/transactions/create", async (req, res) => {
         { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
       );
 
-      const user = await db
-        .collection("Users")
-        .findOne({ accountnumber: UserAccountNumber });
+        //XP CALCULATION WAS CUT FROM HERE
 
-      const BASE_XP = 5; 
-      const MULTIPLIER = 1.5;
-
-      function getXPForLevel(level) {
-        /*
-        let requiredXP = BASE_XP;
-
-        // mod sets base level every 10 levels, e.g. level 1 has same requirements as level 11, 21, etc.
-        let baseLevel = level % 10 === 0 ? 10 : level % 10; // an expression only a mother could love.
-        
-        for (let i = 1; i < baseLevel; i++) {
-          // we multiply the required xp by the multiplier for each level
-          requiredXP = Math.floor(requiredXP * MULTIPLIER);
-        } 
-
-        */
-        const baseLevel = level % 10 || 10; // Levels repeat every 10 levels
-        return Math.floor(BASE_XP * MULTIPLIER ** (baseLevel - 1)); // Multiply XP by power of multiplier
-
-      }
-
-      function useCalculateLevel() {
-        /*
-        let level = 1;
-        let xpForNextLevel = getXPForLevel(level);
-
-        let totalXP = user.UserXP;
-        console.log("db XP : " + totalXP);
-        
-        // we accumulate here so we can determine level and xp within level
-        let xpAccumulated = 0;
-      
-        while (totalXP >= xpAccumulated + xpForNextLevel) {
-          console.log("I am in the while loop");
-          xpAccumulated += xpForNextLevel;
-          level++;
-          xpForNextLevel = getXPForLevel(level);
-        }
-      
-        console.log("Level: " + level);
-        // maybe just use level on server? idk if we need the rest for server
-        return { level };
-        */
-
-        let level = 1, xpForNextLevel = getXPForLevel(level), xpAccumulated = 0;
-
-        while (user.UserXP >= xpAccumulated + xpForNextLevel) {
-          xpAccumulated += xpForNextLevel;
-          xpForNextLevel = getXPForLevel(++level);
-        }
-
-        console.log("Level: " + level);
-        return { level};
-      }
-
-      console.log(connectedUsers.get(UserAccountNumber));
-
-      console.log("function returns: "+useCalculateLevel());
-      console.log((useCalculateLevel().level % 10));
-      if((useCalculateLevel().level % 10) === 0){
-        console.log(connectedUsers.get(UserAccountNumber));
-        console.log("New notification should be sent");
-        io.to(connectedUsers.get(UserAccountNumber)).emit("notification", "New Reward");
-        console.log(connectedUsers.get(UserAccountNumber));
-      }
-
-    
     // Create the transaction
     const transaction = await db.collection("Transactions").insertOne({
       from: UserAccountNumber,
@@ -691,9 +654,12 @@ app.post("/api/transactions/create", async (req, res) => {
         'Reference': Reference
       },
     });
-  } else if (recipient && !company) {
-    console.log("Recipient is a user.");
 
+    // Calculate gameifcation after 5 seconds after succesful transaction
+    setTimeout(calculateGameification, 5000);
+  }
+  //recipient is a user
+  else if (recipient && !company) {
     // Update the balance and exp of the user:
     await db
       .collection("Users")
