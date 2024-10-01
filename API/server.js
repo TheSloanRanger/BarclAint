@@ -462,7 +462,7 @@ app.post("/api/user_transactions", async (req, res) => {
     console.log(req.body.UserAccountNumber);
     const transactions = await db
       .collection("Transactions")
-      .find({ from: req.body.UserAccountNumber })
+      .find( {$or : [ { from: req.body.UserAccountNumber } , { to: req.body.UserAccountNumber } ] } )
       .toArray();
     res.send(transactions);
     console.log("Hello");
