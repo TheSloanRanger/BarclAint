@@ -19,6 +19,7 @@ app.use(cors());
 const {
   userTransactionSchema,
   userTransactionToSchema,
+  createTransactionSchema,
   userUpdateBalanceSchema,
   userAddSchema,
   UserFindSchema,
@@ -556,7 +557,8 @@ app.post("/api/transactions/filterByDate", async (req, res) => {
 // TRANSACTION ENDPOINTS
 // Endpoint to create a new transaction
 app.post("/api/transactions/create", async (req, res) => {
-  const { UserAccountNumber, RecipientAccountNumber, Amount } = req.body;
+  const {error} = createTransactionSchema.validate(req.body);
+  const { UserAccountNumber, RecipientAccountNumber, Amount, Reference } = req.body;
 
   console.log(UserAccountNumber);
   if(UserAccountNumber === RecipientAccountNumber){
@@ -675,6 +677,7 @@ app.post("/api/transactions/create", async (req, res) => {
       amount: Amount,
       ragScore: ragScore,
       type: "Company Transaction",
+      'Reference': Reference
     });
     res.send({
       message: "Transaction successful",
@@ -685,6 +688,7 @@ app.post("/api/transactions/create", async (req, res) => {
         amount: Amount,
         ragScore: ragScore,
         type: "Company Transaction",
+        'Reference': Reference
       },
     });
   } else if (recipient && !company) {
@@ -713,6 +717,7 @@ app.post("/api/transactions/create", async (req, res) => {
       Time: new Date(),
       amount: Amount,
       type: "User Transaction",
+      'Reference': Reference
     });
 
     res.send({
@@ -723,6 +728,7 @@ app.post("/api/transactions/create", async (req, res) => {
         Time: new Date(),
         amount: Amount,
         type: "User Transaction",
+        'Reference': Reference
       },
     });
 
