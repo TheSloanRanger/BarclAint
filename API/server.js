@@ -1,8 +1,20 @@
 require("dotenv").config();
 const express = require("express");
+const app = express();
 const mongoose = require("mongoose");
 const cors = require("cors");
+const http = require("http");
+const server = http.createServer(app);
+const { Server } = require("socket.io")
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
 const Joi = require("joi");
+
+app.use(express.json());
+app.use(cors());
 
 const {
   userTransactionSchema,
@@ -15,15 +27,12 @@ const {
   companyAddSchema,
   rewardAddSchema,
 } = require("./validation_schemas");
+const { connected } = require("process");
 
 const db = mongoose.connection;
 
 const uri =
   "mongodb+srv://BarclaintGroup:XHfVyF4mkQCPUMTf@freecluster.lfcpx.mongodb.net/Barclaint";
-
-const app = express();
-app.use(express.json());
-app.use(cors());
 
 // connecting to mongoDB database using mongoose
 mongoose
@@ -34,6 +43,45 @@ mongoose
   .catch((error) => {
     console.error("Error connecting to MongoDB:", error);
   });
+
+
+
+let connectedUsers = new Map();
+
+io.on("connection", (socket) => {
+  //log number of users currently connected
+  
+  socket.on("register_socket", (accountNumber) => {
+    connectedUsers.set(accountNumber, socket.id);
+    console.log("Number of connected users: " + connectedUsers.size);
+    //wait 5 seconds then send the notification
+    setTimeout(() => {
+      socket.emit("notification", "You are now connected to the server");
+    }, 5000);
+    //socket.emit("notification", "You are now connected to the server");
+    console.log(`User ${accountNumber} connected`);
+  });
+  
+  socket.on("logged_in", (accountNumber) => {
+    socket.emit("notification", `You are now logged in ${accountNumber}`);
+  })
+
+  socket.on("disconnect", () => {
+    for(let [accountNumber, socketId] of connectedUsers){
+      if(socketId === socket.id){
+        connectedUsers.delete(accountNumber);
+        console.log(`User ${accountNumber} disconnected`);
+        break;
+      }
+    }
+  });
+});
+
+
+
+
+
+
 
 function generateRandomAccountNumber() {
   return Math.floor(10000000000 + Math.random() * 90000000000);
@@ -75,6 +123,10 @@ function dictionaryToJson(selectedKeys, updateTable){
 app.get("/", (req, res) => {
   console.log("Hello World");
   res.send("Hello World");
+});
+
+app.get("/api/socketOpen", async (req, res) => {
+
 });
 
 // make any new endpoints here (e.g /api/companies):
@@ -544,6 +596,77 @@ app.post("/api/transactions/create", async (req, res) => {
         { $inc: { accountbalance: -Amount, UserXP: Amount * ragScore } }
       );
 
+      const user = await db
+        .collection("Users")
+        .findOne({ accountnumber: UserAccountNumber });
+
+      const BASE_XP = 5; 
+      const MULTIPLIER = 1.5;
+
+      function getXPForLevel(level) {
+        /*
+        let requiredXP = BASE_XP;
+
+        // mod sets base level every 10 levels, e.g. level 1 has same requirements as level 11, 21, etc.
+        let baseLevel = level % 10 === 0 ? 10 : level % 10; // an expression only a mother could love.
+        
+        for (let i = 1; i < baseLevel; i++) {
+          // we multiply the required xp by the multiplier for each level
+          requiredXP = Math.floor(requiredXP * MULTIPLIER);
+        } 
+
+        */
+        const baseLevel = level % 10 || 10; // Levels repeat every 10 levels
+        return Math.floor(BASE_XP * MULTIPLIER ** (baseLevel - 1)); // Multiply XP by power of multiplier
+
+      }
+
+      function useCalculateLevel() {
+        /*
+        let level = 1;
+        let xpForNextLevel = getXPForLevel(level);
+
+        let totalXP = user.UserXP;
+        console.log("db XP : " + totalXP);
+        
+        // we accumulate here so we can determine level and xp within level
+        let xpAccumulated = 0;
+      
+        while (totalXP >= xpAccumulated + xpForNextLevel) {
+          console.log("I am in the while loop");
+          xpAccumulated += xpForNextLevel;
+          level++;
+          xpForNextLevel = getXPForLevel(level);
+        }
+      
+        console.log("Level: " + level);
+        // maybe just use level on server? idk if we need the rest for server
+        return { level };
+        */
+
+        let level = 1, xpForNextLevel = getXPForLevel(level), xpAccumulated = 0;
+
+        while (user.UserXP >= xpAccumulated + xpForNextLevel) {
+          xpAccumulated += xpForNextLevel;
+          xpForNextLevel = getXPForLevel(++level);
+        }
+
+        console.log("Level: " + level);
+        return { level};
+      }
+
+      console.log(connectedUsers.get(UserAccountNumber));
+
+      console.log("function returns: "+useCalculateLevel());
+      console.log((useCalculateLevel().level % 10));
+      if((useCalculateLevel().level % 10) === 0){
+        console.log(connectedUsers.get(UserAccountNumber));
+        console.log("New notification should be sent");
+        io.to(connectedUsers.get(UserAccountNumber)).emit("notification", "New Reward");
+        console.log(connectedUsers.get(UserAccountNumber));
+      }
+
+    
     // Create the transaction
     const transaction = await db.collection("Transactions").insertOne({
       from: UserAccountNumber,
@@ -602,6 +725,9 @@ app.post("/api/transactions/create", async (req, res) => {
         type: "User Transaction",
       },
     });
+
+    // Send a notification to the recipient
+    io.to(connectedUsers.get(RecipientAccountNumber)).emit("notification", "New Transaction");
   }
 });
 
@@ -726,6 +852,6 @@ app.post("/api/users/addReward", async (req, res) => {
 
 // listening to the server on port 3000
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
