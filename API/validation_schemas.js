@@ -9,6 +9,13 @@ const userTransactionToSchema = Joi.object({
     UserAccountNumber : Joi.string().required()
 });
 
+const createTransactionSchema = Joi.object({
+    UserAccountNumber : Joi.string().required(),
+    RecipientAccountNumber : Joi.string().required(),
+    Amount : Joi.number().required(),
+    Reference : Joi.string().required()
+});
+
 const userUpdateBalanceSchema = Joi.object({
     UserAccountNumber : Joi.string().required(),
     BalanceDifference : Joi.number().required()
@@ -19,6 +26,7 @@ const userAddSchema = Joi.object({
     age : Joi.string().required(),
     UserBalance : Joi.number().required()
 });
+
 
 const UserFindSchema = Joi.object({
     UserAccountNumber : Joi.string().required()
@@ -55,6 +63,7 @@ const filterByDateSchema = Joi.object({
 module.exports = {
     userTransactionSchema,
     userTransactionToSchema,
+    createTransactionSchema,
     userUpdateBalanceSchema,
     UserFindSchema,
     userAddSchema,
