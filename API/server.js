@@ -27,6 +27,7 @@ const {
   getCompanySchema,
   companyAddSchema,
   rewardAddSchema,
+  getUserRewards
 } = require("./validation_schemas");
 const { connected } = require("process");
 
@@ -750,6 +751,18 @@ app.post("/api/rewards/add", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send({ error: "An error occurred while adding reward." });
+  }
+});
+
+// get user rewards
+app.get("/api/rewards/userRewards", async (req, res) => {
+  const {error} = getUserRewards.validate(req.body);
+  try{
+    const user = await db.collection("Users").findOne({'accountnumber':req.body.UserAccountNumber});
+    res.status(200).send(user.rewards);
+  }catch (err) {
+    console.error(err);
+    res.status(500).send({error: "An error occured getting user rewards."});
   }
 });
 
