@@ -122,7 +122,8 @@ function dictionaryToJson(selectedKeys, updateTable){
 }
 
 
-async function calculateGameification(){
+async function calculateGameification(UserAccountNumber){
+
   const BASE_XP = 5; 
   const MULTIPLIER = 1.5;
 
@@ -654,7 +655,7 @@ app.post("/api/transactions/create", async (req, res) => {
     });
 
     // Calculate gameifcation after 5 seconds after succesful transaction
-    setTimeout(calculateGameification, 5000);
+    setTimeout(calculateGameification(UserAccountNumber), 5000);
   }
   //recipient is a user
   else if (recipient && !company) {
