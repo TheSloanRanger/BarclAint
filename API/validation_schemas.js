@@ -48,8 +48,9 @@ const rewardAddSchema = Joi.object({
     'Awardable': Joi.boolean().required()
 })
 
-
-
+const getUserRewards = Joi.object({
+    UserAccountNumber : Joi.string().required()
+})
 const getCompanySchema = Joi.object({
     'Account Number': Joi.string().required()
 })
@@ -70,5 +71,6 @@ module.exports = {
     companyAddSchema,
     getCompanySchema,
     filterByDateSchema,
-    rewardAddSchema
+    rewardAddSchema,
+    getUserRewards
 };
