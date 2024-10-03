@@ -168,8 +168,6 @@ app.get("/api/socketOpen", async (req, res) => {
 app.get("/api/companies", async (req, res) => {
   // return all documents from the companies mongodb collection:
   const companies = await db.collection("Companies").find({}).toArray();
-  console.log(companies);
-  console.log(companies.length);
   res.send(companies);
 });
 
@@ -464,10 +462,9 @@ app.post("/api/user_transactions", async (req, res) => {
     console.log(req.body.UserAccountNumber);
     const transactions = await db
       .collection("Transactions")
-      .find({ from: req.body.UserAccountNumber })
+      .find( {$or : [ { from: req.body.UserAccountNumber } , { to: req.body.UserAccountNumber } ] } )
       .toArray();
     res.send(transactions);
-    console.log("Hello");
   } catch (err) {
     console.error(err);
     res
